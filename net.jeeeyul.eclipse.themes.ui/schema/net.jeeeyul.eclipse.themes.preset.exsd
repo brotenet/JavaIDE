@@ -1,0 +1,182 @@
+<?xml version='1.0' encoding='UTF-8'?>
+<!-- Schema file written by PDE -->
+<schema targetNamespace="net.jeeeyul.eclipse.themes" xmlns="http://www.w3.org/2001/XMLSchema">
+<annotation>
+      <appinfo>
+         <meta.schema plugin="net.jeeeyul.eclipse.themes" id="preset" name="Jeeeyul's Themes Preset"/>
+      </appinfo>
+      <documentation>
+         This extension point allows that providing additional presets for &quot;Jeeeyul&apos;s Eclipse Themes&quot;.
+      </documentation>
+   </annotation>
+
+   <element name="extension">
+      <annotation>
+         <appinfo>
+            <meta.element />
+         </appinfo>
+      </annotation>
+      <complexType>
+         <sequence>
+            <choice>
+               <element ref="preset" minOccurs="1" maxOccurs="unbounded"/>
+               <element ref="preset-category" minOccurs="1" maxOccurs="unbounded"/>
+            </choice>
+         </sequence>
+         <attribute name="point" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="preset">
+      <complexType>
+         <sequence>
+            <element ref="description"/>
+         </sequence>
+         <attribute name="id" type="string" use="required">
+            <annotation>
+               <documentation>
+                  An unique identifier.
+               </documentation>
+            </annotation>
+         </attribute>
+         <attribute name="name" type="string" use="required">
+            <annotation>
+               <documentation>
+                  The name of custom theme preset.
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="epf" type="string" use="required">
+            <annotation>
+               <documentation>
+                  EPF file that contains settings.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="icon" type="string">
+            <annotation>
+               <documentation>
+                  Specifies unique icon for this preset. The size of icon should be 16x16. If not specified, an icon will be automatically generated based on it&apos;s preset content.
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="resource"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="category" type="string">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute kind="identifier" basedOn="net.jeeeyul.eclipse.themes.preset/preset-category/@id"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <element name="description" type="string">
+      <annotation>
+         <appinfo>
+            <meta.element translatable="true"/>
+         </appinfo>
+         <documentation>
+            Additional Description that will be shown to users.
+         </documentation>
+      </annotation>
+   </element>
+
+   <element name="preset-category">
+      <complexType>
+         <attribute name="name" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+               <appinfo>
+                  <meta.attribute translatable="true"/>
+               </appinfo>
+            </annotation>
+         </attribute>
+         <attribute name="id" type="string" use="required">
+            <annotation>
+               <documentation>
+                  
+               </documentation>
+            </annotation>
+         </attribute>
+      </complexType>
+   </element>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="since"/>
+      </appinfo>
+      <documentation>
+         2.0.0
+      </documentation>
+   </annotation>
+
+   <annotation>
+      <appinfo>
+         <meta.section type="examples"/>
+      </appinfo>
+      <documentation>
+         Default Preset Example
+&lt;pre&gt;
+&lt;extension point=&quot;net.jeeeyul.eclipse.themes.preset&quot;&gt;
+    &lt;preset
+        epf=&quot;presets/default.epf&quot;
+        id=&quot;net.jeeeyul.eclipse.themes.preset.default&quot;
+        name=&quot;Default&quot;&gt;
+            &lt;description&gt;
+                Default Preset
+            &lt;/description&gt;
+    &lt;/preset&gt;
+&lt;/extension&gt;
+&lt;/pre&gt;
+      </documentation>
+   </annotation>
+
+
+
+   <annotation>
+      <appinfo>
+         <meta.section type="copyright"/>
+      </appinfo>
+      <documentation>
+         jeeeyul@gmail.com
+      </documentation>
+   </annotation>
+
+</schema>

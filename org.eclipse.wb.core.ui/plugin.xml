@@ -1,0 +1,66 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+
+	<!-- ======================================================== -->
+	<!-- GUI editor -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.ui.editors">
+		<editor class="org.eclipse.wb.internal.core.editor.multi.DesignerEditor"
+			contributorClass="org.eclipse.wb.internal.core.editor.multi.DesignerEditorContributor"
+			extensions="java" icon="icons/gui_editor.gif" id="org.eclipse.wb.core.guiEditor"
+			name="Form Editor">
+			<contentTypeBinding contentTypeId="org.eclipse.wb.core.javaSourceGUI"/>
+		</editor>
+	</extension>
+
+	<!-- ======================================================== -->
+	<!-- Preferences -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.ui.preferenceTransfer">
+		<transfer id="org.eclipse.wb.core.preferencesTransfer" icon="icons/preference_transfer.png"
+			name="Form Editing Preferences">
+			<mapping scope="instance">
+				<entry node="org.eclipse.wb.core"/>
+			</mapping>
+		</transfer>
+	</extension>
+
+	<extension point="org.eclipse.ui.preferencePages">
+		<page id="org.eclipse.wb.core.preferences.MainPreferencePage"
+			class="org.eclipse.wb.internal.core.preferences.MainPreferencePage" name="Form Editor">
+			<keywordReference id="org.eclipse.wb.kw.root"/>
+		</page>
+		<page id="org.eclipse.wb.core.preferences.ParsingPreferencePage"
+			category="org.eclipse.wb.core.preferences.MainPreferencePage"
+			class="org.eclipse.wb.internal.core.preferences.ParsingPreferencePage"
+			name="Code Parsing">
+			<keywordReference id="org.eclipse.wb.kw.codeParsing"/>
+		</page>
+	</extension>
+
+	<extension point="org.eclipse.ui.keywords">
+		<keyword label="%preferenceKeywords.root" id="org.eclipse.wb.kw.root"/>
+		<keyword label="%preferenceKeywords.codeParsing" id="org.eclipse.wb.kw.codeParsing"/>
+	</extension>
+
+	<!-- ======================================================== -->
+	<!-- New Wizards -->
+	<!-- ======================================================== -->
+
+	<!-- ======================================================== -->
+	<!-- Perspectives and views -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.ui.actionSets">
+		<actionSet label="Designer Actions" visible="true" id="org.eclipse.wb.core.ui.actionset">
+			<action
+				class="org.eclipse.wb.internal.core.wizards.actions.NewDesignerTypeDropDownAction"
+				icon="icons/wizard/dropdown.gif"
+				id="org.eclipse.wb.core.wizards.actions.NewDesignerTypeDropDownAction"
+				label="New Visual Class" style="pulldown"
+				toolbarPath="org.eclipse.ui.workbench.file/new.ext"
+				tooltip="Create new visual classes"/>
+		</actionSet>
+	</extension>
+
+</plugin>

@@ -1,0 +1,15 @@
+output = bin
+bin.includes = META-INF/,\
+               .,\
+               plugin.xml,\
+               css/,\
+               icons/,\
+               presets/,\
+               lib/org.eclipse.xtend.lib-2.12.0.jar,\
+               lib/guava-22.0.jar,\
+               lib/org.eclipse.xtext-2.12.0.jar,\
+               lib/org.eclipse.xtext.xbase-2.12.0.jar
+source.. = src/,\
+           src-gen/,\
+           xtend-gen/
+qualifier = context

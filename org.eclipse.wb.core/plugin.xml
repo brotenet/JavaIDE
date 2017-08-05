@@ -1,0 +1,134 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<?eclipse version="3.2"?>
+<plugin>
+
+	<!-- ======================================================== -->
+	<!-- Extension points -->
+	<!-- ======================================================== -->
+	<extension-point id="exceptions" name="Exception description files"
+		schema="schema/exceptions.exsd"/>
+	<extension-point id="adaptableFactories" name="Adaptable factories"
+		schema="schema/adaptableFactories.exsd"/>
+    <extension-point id="classLoadingContributor"
+        name="Contributor for loading class from Designer plugins"
+        schema="schema/classLoadingContributor.exsd"/>
+    <extension-point id="projectClasspathListeners"
+		name="Listener for Java project classpath changes"
+		schema="schema/projectClasspathListeners.exsd"/>
+	<extension-point id="designerContentPatterns" name="Patterns for detecting Designer GUI"
+		schema="schema/designerContentPatterns.exsd"/>
+	<!-- descriptions -->
+	<extension-point id="descriptionProcessors" name="Processors for loaded descriptions"
+		schema="schema/descriptionProcessors.exsd"/>
+	<extension-point id="descriptionVersionsProviderFactories"
+		name="Factory for provider of description resources versions"
+		schema="schema/descriptionVersionsProviderFactories.exsd"/>
+	<!-- toolkit -->
+	<extension-point id="toolkits" name="GUI toolkits" schema="schema/toolkits.exsd"/>
+	<extension-point id="componentsHierarchyProviders" name="Components hierarchy providers"
+		schema="schema/componentsHierarchyProviders.exsd"/>
+	<extension-point id="layoutManagers" name="Layout managers for toolkit"
+		schema="schema/layoutManagers.exsd"/>
+	<extension-point id="surroundWith" name="Targets for surrounding components with some container"
+		schema="schema/surroundWith.exsd"/>
+	<!-- property -->
+	<extension-point id="propertyEditors" name="Property editors"
+		schema="schema/propertyEditors.exsd"/>
+	<extension-point id="expressionEvaluators" name="Evaluators for AST Expressions"
+		schema="schema/expressionEvaluators.exsd"/>
+	<extension-point id="invocationEvaluatorInterceptors"
+		name="Interceptor for MethodInvocation/ClassInstanceCreation evaluation"
+		schema="schema/invocationEvaluatorInterceptors.exsd"/>
+	<extension-point id="propertyConverters" name="Property value to Java source converter"
+		schema="schema/propertyConverters.exsd"/>
+	<extension-point id="standardToolkitPackages" schema="schema/standardToolkitPackages.exsd"
+		name="Package prefixes for standard toolkit components"/>
+	<!-- Property UI -->
+	<extension-point id="propertiesPageCategoryProviders"
+		name="Providers of PropertyCategoryProvider"
+		schema="schema/propertiesPageCategoryProviders.exsd"/>
+	<extension-point id="propertiesPageProcessors"
+		name="Processors for List for Property before displaying"
+		schema="schema/propertiesPageProcessors.exsd"/>
+	<extension-point id="propertiesPageActions" name="Contributions for properties page actions"
+		schema="schema/propertiesPageActions.exsd"/>
+	<!-- palette -->
+	<extension-point id="paletteComponentExists" name="Palette component quick check for existence"
+		schema="schema/paletteComponentExists.exsd"/>
+	<!-- NLS -->
+	<extension-point id="nlsSources" name="NLS sources" schema="schema/nlsSources.exsd"/>
+	<!-- GEF -->
+	<extension-point id="editPartFactories" name="GEF EditPart factories"
+		schema="schema/editPartFactories.exsd"/>
+	<extension-point id="editPolicyFactories" name="LayoutEditPolicy factories"
+		schema="schema/editPolicyFactories.exsd"/>
+	<extension-point id="editPartConfigurators" name="EditPart configurators"
+		schema="schema/editPartConfigurators.exsd"/>
+	<!-- GEF for tree -->
+	<extension-point id="treeEditPartFactories" name="GEF EditPart factories for TreeViewer"
+		schema="schema/treeEditPartFactories.exsd"/>
+	<extension-point id="treeEditPolicyFactories" name="LayoutEditPolicy factories for TreeViewer"
+		schema="schema/treeEditPolicyFactories.exsd"/>
+	<extension-point id="treeEditPartConfigurators" name="EditPart configurators for TreeViewer"
+		schema="schema/treeEditPartConfigurators.exsd"/>
+	<!-- Baseline -->
+	<extension-point id="baselineSupport" name="Component&apos;s baseline offset provider"
+		schema="schema/baselineSupport.exsd"/>
+	<extension-point id="configurablePropertyFactories"
+		name="Factories for creating configurable (not generic) properties"
+		schema="schema/configurablePropertyFactories.exsd"/>
+	<!-- DesignPages -->
+	<extension-point id="editorLifeCycleListeners" name="Listener for Java based editor life cycle"
+		schema="schema/editorLifeCycleListeners.exsd"/>
+	<extension-point id="designPageFactories" name="Factories for design pages"
+		schema="schema/designPageFactories.exsd"/>
+	<!-- Error Reporting -->
+	<extension-point id="errorReportEntriesProviders"
+		name="Providers for extra report entries which further will be included into error report"
+		schema="schema/errorReportProviders.exsd"/>
+	<!-- Branding -->
+	<extension-point id="branding" name="Branding descriptions" schema="schema/branding.exsd"/>
+
+
+
+	<!-- ======================================================== -->
+	<!-- Exceptions -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.wb.core.exceptions">
+		<file path="resources/exceptions.xml"/>
+		<rewriter class="org.eclipse.wb.internal.core.editor.errors.CoreExceptionRewriter"/>
+	</extension>
+
+
+
+
+	<!-- ======================================================== -->
+	<!-- Baseline -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.wb.core.baselineSupport">
+		<support class="org.eclipse.wb.internal.core.laf.DefaultBaselineSupport" priority="-100"/>
+	</extension>
+
+
+    <!-- ======================================================== -->
+    <!-- Perspectives and views -->
+    <!-- ======================================================== -->
+    <extension point="org.eclipse.ui.views">
+        <category id="org.eclipse.wb.core.category" name="WindowBuilder"/>
+        <view category="org.eclipse.wb.core.category" id="org.eclipse.wb.core.StructureView"
+            class="org.eclipse.wb.internal.core.views.StructureView"
+            icon="icons/structure/properties_view.gif" name="Structure"/>
+        <view category="org.eclipse.wb.core.category" id="org.eclipse.wb.core.PaletteView"
+            class="org.eclipse.wb.internal.core.views.PaletteView"
+            icon="icons/structure/palette.png" name="Palette"/>
+    </extension>
+    
+
+	<!-- ======================================================== -->
+	<!-- Preferences -->
+	<!-- ======================================================== -->
+	<extension point="org.eclipse.core.runtime.preferences">
+		<initializer class="org.eclipse.wb.internal.core.preferences.PreferenceInitializer"/>
+	</extension>
+
+</plugin>

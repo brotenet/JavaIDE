@@ -1,0 +1,1185 @@
+package net.jeeeyul.eclipse.themes.rendering;
+
+import com.google.common.base.Objects;
+import java.beans.PropertyChangeEvent;
+import java.beans.PropertyChangeListener;
+import java.util.Collections;
+import net.jeeeyul.eclipse.themes.CoreImages;
+import net.jeeeyul.eclipse.themes.css.internal.CSSClasses;
+import net.jeeeyul.eclipse.themes.internal.Debug;
+import net.jeeeyul.eclipse.themes.rendering.JTabSettings;
+import net.jeeeyul.eclipse.themes.rendering.VerticalAlignment;
+import net.jeeeyul.eclipse.themes.rendering.internal.JTabRendererHelper;
+import net.jeeeyul.eclipse.themes.rendering.internal.Shadow9PatchFactory;
+import net.jeeeyul.eclipse.themes.util.ImageDataUtil;
+import net.jeeeyul.swtend.SWTExtensions;
+import net.jeeeyul.swtend.ui.HSB;
+import net.jeeeyul.swtend.ui.NinePatch;
+import org.eclipse.core.runtime.Platform;
+import org.eclipse.swt.SWT;
+import org.eclipse.swt.custom.CTabFolder;
+import org.eclipse.swt.custom.CTabFolderRenderer;
+import org.eclipse.swt.custom.CTabItem;
+import org.eclipse.swt.graphics.Color;
+import org.eclipse.swt.graphics.Font;
+import org.eclipse.swt.graphics.FontData;
+import org.eclipse.swt.graphics.GC;
+import org.eclipse.swt.graphics.Image;
+import org.eclipse.swt.graphics.ImageData;
+import org.eclipse.swt.graphics.Path;
+import org.eclipse.swt.graphics.Point;
+import org.eclipse.swt.graphics.RGB;
+import org.eclipse.swt.graphics.Rectangle;
+import org.eclipse.swt.widgets.Control;
+import org.eclipse.swt.widgets.Display;
+import org.eclipse.swt.widgets.Event;
+import org.eclipse.swt.widgets.Listener;
+import org.eclipse.swt.widgets.ToolBar;
+import org.eclipse.swt.widgets.ToolItem;
+import org.eclipse.xtext.xbase.lib.CollectionLiterals;
+import org.eclipse.xtext.xbase.lib.Conversions;
+import org.eclipse.xtext.xbase.lib.Exceptions;
+import org.eclipse.xtext.xbase.lib.ExclusiveRange;
+import org.eclipse.xtext.xbase.lib.Extension;
+import org.eclipse.xtext.xbase.lib.Functions.Function1;
+import org.eclipse.xtext.xbase.lib.IterableExtensions;
+import org.eclipse.xtext.xbase.lib.ObjectExtensions;
+import org.eclipse.xtext.xbase.lib.Procedures.Procedure1;
+
+/**
+ * A new CTabFolder Renderer for Jeeeyul's eclipse themes 2.0
+ * 
+ * @since 2.0
+ */
+@SuppressWarnings("all")
+public class JeeeyulsTabRenderer extends CTabFolderRenderer {
+  @Extension
+  private static JTabRendererHelper _jTabRendererHelper = new JTabRendererHelper();
+  
+  @Extension
+  private static SWTExtensions _sWTExtensions = SWTExtensions.INSTANCE;
+  
+  private final static int CLOSE_BUTTON_WIDTH = 11;
+  
+  private final static int TEXT_FLAGS = JeeeyulsTabRenderer._sWTExtensions.operator_or(SWT.DRAW_TRANSPARENT, SWT.DRAW_MNEMONIC);
+  
+  private final static int MINIMUM_SIZE = (1 << 24);
+  
+  private JTabSettings settings = new JTabSettings(this);
+  
+  private CTabFolder tabFolder;
+  
+  private NinePatch shadowNinePatch;
+  
+  private PropertyChangeListener settingsListener = new PropertyChangeListener() {
+    @Override
+    public void propertyChange(final PropertyChangeEvent it) {
+      JeeeyulsTabRenderer.this.handleSettingChange(it);
+    }
+  };
+  
+  private Listener windowsRedrawHook = new Listener() {
+    @Override
+    public void handleEvent(final Event it) {
+      JeeeyulsTabRenderer.this.parent.redraw();
+    }
+  };
+  
+  private void handleSettingChange(final PropertyChangeEvent event) {
+    String _propertyName = event.getPropertyName();
+    boolean _matched = false;
+    if (Objects.equal(_propertyName, "shadow-color")) {
+      _matched=true;
+    }
+    if (!_matched) {
+      if (Objects.equal(_propertyName, "shadow-radius")) {
+        _matched=true;
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(_propertyName, "border-radius")) {
+        _matched=true;
+      }
+    }
+    if (_matched) {
+      JeeeyulsTabRenderer._sWTExtensions.<NinePatch>safeDispose(this.shadowNinePatch);
+    }
+    if (!_matched) {
+      if (Objects.equal(_propertyName, "border-colors")) {
+        _matched=true;
+      }
+      if (!_matched) {
+        if (Objects.equal(_propertyName, "margins")) {
+          _matched=true;
+        }
+      }
+      if (_matched) {
+        if ((Objects.equal(event.getOldValue(), null) || Objects.equal(event.getNewValue(), null))) {
+          this.tabFolder.getShell().layout(true, true);
+        }
+      }
+    }
+    this.tabFolder.redraw();
+  }
+  
+  public JeeeyulsTabRenderer(final CTabFolder parent) {
+    super(parent);
+    this.tabFolder = parent;
+    this.settings.addPropertyChangeListener(this.settingsListener);
+    boolean _isWindow = JeeeyulsTabRenderer._jTabRendererHelper.isWindow();
+    if (_isWindow) {
+      this.tabFolder.addListener(SWT.Resize, this.windowsRedrawHook);
+    }
+  }
+  
+  @Override
+  protected void dispose() {
+    JeeeyulsTabRenderer._sWTExtensions.<NinePatch>safeDispose(this.shadowNinePatch);
+    this.settings.removePropertyChangeListener(this.settingsListener);
+    if ((JeeeyulsTabRenderer._jTabRendererHelper.isWindow() && JeeeyulsTabRenderer._sWTExtensions.isAlive(this.parent))) {
+      this.parent.removeListener(SWT.Resize, this.windowsRedrawHook);
+    }
+    super.dispose();
+  }
+  
+  @Override
+  protected Point computeSize(final int part, final int state, final GC gc, final int wHint, final int hHint) {
+    Point _switchResult = null;
+    boolean _matched = false;
+    if ((part >= 0)) {
+      _matched=true;
+      CTabItem item = this.parent.getItem(part);
+      int width = 0;
+      int height = 0;
+      width = (width + this.settings.getTabItemPaddings().x);
+      Image _image = item.getImage();
+      boolean _notEquals = (!Objects.equal(_image, null));
+      if (_notEquals) {
+        width = (width + item.getImage().getBounds().width);
+        int _tabItemHorizontalSpacing = this.settings.getTabItemHorizontalSpacing();
+        int _plus = (width + _tabItemHorizontalSpacing);
+        width = _plus;
+        height = item.getImage().getBounds().height;
+      }
+      String itemText = item.getText().trim();
+      if (((JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, JeeeyulsTabRenderer.MINIMUM_SIZE) && this.settings.isTruncateTabItems()) && 
+        (itemText.length() > this.settings.getMinimumCharacters()))) {
+        String _substring = itemText.substring(0, this.settings.getMinimumCharacters());
+        String _xifexpression = null;
+        boolean _isUseEllipses = this.settings.isUseEllipses();
+        if (_isUseEllipses) {
+          _xifexpression = "...";
+        } else {
+          _xifexpression = "";
+        }
+        String _plus_1 = (_substring + _xifexpression);
+        itemText = _plus_1;
+      }
+      int _length = itemText.trim().length();
+      boolean _greaterThan = (_length > 0);
+      if (_greaterThan) {
+        Font _font = item.getFont();
+        Font _font_1 = this.parent.getFont();
+        Point textSize = JeeeyulsTabRenderer._sWTExtensions.computeTextExtent(itemText, JeeeyulsTabRenderer._jTabRendererHelper.<Font>getFirstNotNull(Collections.<Font>unmodifiableList(CollectionLiterals.<Font>newArrayList(_font, _font_1))));
+        width = (width + textSize.x);
+        height = Math.max(height, textSize.y);
+      }
+      if ((JeeeyulsTabRenderer._jTabRendererHelper.getShowClose(this.parent) || item.getShowClose())) {
+        if ((JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED) || JeeeyulsTabRenderer._jTabRendererHelper.getShowUnselectedClose(this.parent))) {
+          int _tabItemHorizontalSpacing_1 = this.settings.getTabItemHorizontalSpacing();
+          int _plus_2 = (width + _tabItemHorizontalSpacing_1);
+          width = _plus_2;
+          width = (width + JeeeyulsTabRenderer.CLOSE_BUTTON_WIDTH);
+        }
+      }
+      int _tabHeight = this.parent.getTabHeight();
+      int _plus_3 = (_tabHeight + 2);
+      height = Math.max(height, _plus_3);
+      int _max = Math.max(this.settings.getTabItemPaddings().width, 0);
+      int _plus_4 = (width + _max);
+      width = _plus_4;
+      int _tabSpacing = this.settings.getTabSpacing();
+      int _plus_5 = (width + _tabSpacing);
+      width = _plus_5;
+      return new Point(width, height);
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_HEADER)) {
+        _matched=true;
+        int _tabHeight_1 = this.parent.getTabHeight();
+        Point size = new Point(0, _tabHeight_1);
+        int _itemCount = this.parent.getItemCount();
+        boolean _equals = (_itemCount == 0);
+        if (_equals) {
+          size.y = Math.max(gc.textExtent("Default").y, size.y);
+        } else {
+          int _itemCount_1 = this.parent.getItemCount();
+          ExclusiveRange _doubleDotLessThan = new ExclusiveRange(0, _itemCount_1, true);
+          for (final Integer i : _doubleDotLessThan) {
+            {
+              Point eachSize = this.computeSize((i).intValue(), SWT.NONE, gc, wHint, hHint);
+              size.y = Math.max(size.y, eachSize.y);
+            }
+          }
+        }
+        int _minimumToolBarHeight = JeeeyulsTabRenderer._sWTExtensions.getMinimumToolBarHeight();
+        int _plus_6 = (_minimumToolBarHeight + 2);
+        size.y = Math.max(size.y, _plus_6);
+        return size;
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_CLOSE_BUTTON)) {
+        _matched=true;
+        return new Point(11, this.computeSize(CTabFolderRenderer.PART_HEADER, 0, gc, (-1), (-1)).y);
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_CHEVRON_BUTTON)) {
+        _matched=true;
+        return new Point(20, 16);
+      }
+    }
+    if (!_matched) {
+      _switchResult = super.computeSize(part, state, gc, wHint, hHint);
+    }
+    return _switchResult;
+  }
+  
+  @Override
+  protected Rectangle computeTrim(final int part, final int state, final int x, final int y, final int width, final int height) {
+    Rectangle result = new Rectangle(x, y, width, height);
+    boolean _matched = false;
+    if (Objects.equal(part, CTabFolderRenderer.PART_BODY)) {
+      _matched=true;
+      result.x = ((result.x - this.settings.getMargins().x) - this.settings.getPaddings().x);
+      result.width = ((((result.width + this.settings.getMargins().x) + this.settings.getPaddings().x) + this.settings.getPaddings().width) + 
+        this.settings.getMargins().width);
+      boolean _onBottom = JeeeyulsTabRenderer._jTabRendererHelper.getOnBottom(this.tabFolder);
+      if (_onBottom) {
+        throw new UnsupportedOperationException();
+      }
+      int _tabHeight = this.tabFolder.getTabHeight();
+      int _minus = (result.y - _tabHeight);
+      int _minus_1 = (_minus - this.settings.getPaddings().y);
+      int _minus_2 = (_minus_1 - 2);
+      result.y = _minus_2;
+      int _tabHeight_1 = this.tabFolder.getTabHeight();
+      int _plus = (result.height + _tabHeight_1);
+      int _plus_1 = (_plus + this.settings.getPaddings().y);
+      int _plus_2 = (_plus_1 + this.settings.getMargins().height);
+      int _plus_3 = (_plus_2 + 
+        this.settings.getPaddings().height);
+      int _plus_4 = (_plus_3 + 2);
+      result.height = _plus_4;
+      HSB[] _borderColors = this.settings.getBorderColors();
+      boolean _notEquals = (!Objects.equal(_borderColors, null));
+      if (_notEquals) {
+        result.x = (result.x - 1);
+        result.width = (result.width + 2);
+        result.height = (result.height + 1);
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_BACKGROUND)) {
+        _matched=true;
+        result.height = (result.height + 10);
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_BORDER)) {
+        _matched=true;
+        result.x = ((-this.settings.getMargins().x) - 4);
+        int _borderRadius = this.settings.getBorderRadius();
+        double _divide = (_borderRadius / 1.8);
+        double _plus_5 = (_divide + 0.5);
+        int _plus_6 = ((this.settings.getMargins().x + this.settings.getMargins().width) + ((int) _plus_5));
+        result.width = _plus_6;
+        HSB[] _borderColors_1 = this.settings.getBorderColors();
+        boolean _notEquals_1 = (!Objects.equal(_borderColors_1, null));
+        if (_notEquals_1) {
+          int _width = result.width;
+          result.width = (_width + 2);
+        }
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_HEADER)) {
+        _matched=true;
+        result.x = (result.x - this.settings.getMargins().x);
+        result.width = ((result.width + this.settings.getMargins().x) + this.settings.getMargins().width);
+      }
+    }
+    if (!_matched) {
+      if ((((part == CTabFolderRenderer.PART_CHEVRON_BUTTON) || (part == CTabFolderRenderer.PART_MIN_BUTTON)) || (part == CTabFolderRenderer.PART_MAX_BUTTON))) {
+        _matched=true;
+      }
+    }
+    if (!_matched) {
+      if ((part >= 0)) {
+        _matched=true;
+        int _tabSpacing = this.settings.getTabSpacing();
+        int _plus_7 = (this.settings.getTabItemPaddings().width + _tabSpacing);
+        result.x = _plus_7;
+      }
+    }
+    if (!_matched) {
+      result = super.computeTrim(part, state, x, y, width, height);
+    }
+    return result;
+  }
+  
+  @Override
+  protected void draw(final int part, final int state, final Rectangle bounds, final GC gc) {
+    try {
+      Debug.countFrame();
+      this.doDraw(part, state, bounds, gc);
+    } catch (final Throwable _t) {
+      if (_t instanceof Exception) {
+        final Exception e = (Exception)_t;
+        e.printStackTrace();
+      } else {
+        throw Exceptions.sneakyThrow(_t);
+      }
+    }
+  }
+  
+  private void doDraw(final int part, final int state, final Rectangle bounds, final GC gc) {
+    gc.setAdvanced(true);
+    gc.setAntialias(SWT.ON);
+    gc.setInterpolation(SWT.HIGH);
+    gc.setLineJoin(SWT.JOIN_ROUND);
+    gc.setAlpha(255);
+    gc.setFillRule(SWT.FILL_WINDING);
+    gc.setBackground(this.tabFolder.getBackground());
+    gc.setForeground(this.tabFolder.getForeground());
+    gc.setLineWidth(1);
+    gc.setLineCap(SWT.CAP_SQUARE);
+    gc.setLineStyle(SWT.LINE_SOLID);
+    boolean _matched = false;
+    if (Objects.equal(part, CTabFolderRenderer.PART_HEADER)) {
+      _matched=true;
+      this.drawTabHeader(part, state, bounds, gc);
+      this.updateChevronImage();
+      this.updateBkImages();
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_CLOSE_BUTTON)) {
+        _matched=true;
+        this.drawCloseButton(part, state, bounds, gc);
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_BORDER)) {
+        _matched=true;
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_BODY)) {
+        _matched=true;
+        this.drawTabBody(part, state, bounds, gc);
+      }
+    }
+    if (!_matched) {
+      if (Objects.equal(part, CTabFolderRenderer.PART_CHEVRON_BUTTON)) {
+        _matched=true;
+        this.drawChevronButton(part, state, bounds, gc);
+      }
+    }
+    if (!_matched) {
+      if ((part >= 0)) {
+        _matched=true;
+        boolean _single = this.tabFolder.getSingle();
+        if (_single) {
+          return;
+        }
+        this.drawTabItem(part, state, bounds, gc);
+      }
+    }
+    if (!_matched) {
+      super.draw(part, state, bounds, gc);
+    }
+  }
+  
+  protected Object drawChevronButton(final int part, final int state, final Rectangle rectangle, final GC gc) {
+    return null;
+  }
+  
+  private void updateBkImages() {
+    String _oS = Platform.getOS();
+    boolean _equals = Objects.equal(_oS, Platform.OS_MACOSX);
+    if (_equals) {
+      Control _topRight = this.tabFolder.getTopRight();
+      boolean _notEquals = (!Objects.equal(_topRight, null));
+      if (_notEquals) {
+        Control _topRight_1 = this.tabFolder.getTopRight();
+        final Procedure1<Control> _function = new Procedure1<Control>() {
+          @Override
+          public void apply(final Control it) {
+            it.setBackgroundImage(CoreImages.getImage(CoreImages.TRANSPARENT));
+          }
+        };
+        ObjectExtensions.<Control>operator_doubleArrow(_topRight_1, _function);
+      }
+    }
+  }
+  
+  private void updateChevronImage() {
+    final Point chevronSize = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).getSize();
+    if (((chevronSize.x == 0) || (chevronSize.y == 0))) {
+      return;
+    }
+    Object _data = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).getData("last-render-color");
+    HSB lastColor = ((HSB) _data);
+    Object _data_1 = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).getData("last-render-count");
+    Integer lastCount = ((Integer) _data_1);
+    final Function1<CTabItem, Boolean> _function = new Function1<CTabItem, Boolean>() {
+      @Override
+      public Boolean apply(final CTabItem it) {
+        boolean _isShowing = it.isShowing();
+        return Boolean.valueOf((_isShowing == false));
+      }
+    };
+    final int count = Math.min(IterableExtensions.size(IterableExtensions.<CTabItem>filter(((Iterable<CTabItem>)Conversions.doWrapArray(this.parent.getItems())), _function)), 99);
+    if ((Objects.equal(lastColor, this.settings.getChevronColor()) && ((lastCount).intValue() == count))) {
+      return;
+    }
+    Point size = this.computeSize(CTabFolderRenderer.PART_CHEVRON_BUTTON, SWT.NONE, null, SWT.DEFAULT, SWT.DEFAULT);
+    ToolBar _chevron = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent);
+    _chevron.setBackgroundImage(null);
+    Display _display = JeeeyulsTabRenderer._sWTExtensions.getDisplay();
+    final Image mask = new Image(_display, size.x, size.y);
+    final GC mgc = new GC(mask);
+    final net.jeeeyul.swtend.sam.Procedure1<Path> _function_1 = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+      @Override
+      public void apply(final Path it) {
+        it.moveTo(0, 0);
+        it.lineTo(3, 3);
+        it.lineTo(0, 6);
+        it.moveTo(3, 0);
+        it.lineTo(6, 3);
+        it.lineTo(3, 6);
+      }
+    };
+    Path path = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function_1);
+    mgc.setBackground(JeeeyulsTabRenderer._sWTExtensions.COLOR_BLACK());
+    JeeeyulsTabRenderer._sWTExtensions.fill(mgc, mask.getBounds());
+    mgc.setForeground(JeeeyulsTabRenderer._sWTExtensions.COLOR_WHITE());
+    JeeeyulsTabRenderer._sWTExtensions.draw(mgc, path);
+    FontData fd = IterableExtensions.<FontData>head(((Iterable<FontData>)Conversions.doWrapArray(this.parent.getFont().getFontData())));
+    fd.setHeight(((72 * 10) / JeeeyulsTabRenderer._sWTExtensions.getDisplay().getDPI().y));
+    Display _display_1 = JeeeyulsTabRenderer._sWTExtensions.getDisplay();
+    mgc.setFont(JeeeyulsTabRenderer._sWTExtensions.<Font>autoDispose(new Font(_display_1, fd)));
+    mgc.drawString(Integer.valueOf(count).toString(), 6, 5, true);
+    mgc.dispose();
+    ImageData data = ImageDataUtil.convertBrightnessToAlpha(mask.getImageData(), this.settings.getChevronColor());
+    mask.dispose();
+    Display _display_2 = JeeeyulsTabRenderer._sWTExtensions.getDisplay();
+    Image itemImage = JeeeyulsTabRenderer._sWTExtensions.<Image>shouldDisposeWith(new Image(_display_2, data), this.parent);
+    Display _display_3 = JeeeyulsTabRenderer._sWTExtensions.getDisplay();
+    Image toolbarImg = JeeeyulsTabRenderer._sWTExtensions.<Image>shouldDisposeWith(new Image(_display_3, chevronSize.x, chevronSize.y), this.parent);
+    GC tgc = new GC(toolbarImg);
+    int _tabHeight = this.parent.getTabHeight();
+    int _plus = (_tabHeight + 3);
+    Rectangle _rectangle = new Rectangle(0, (-JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).getBounds().y), chevronSize.x, _plus);
+    JeeeyulsTabRenderer._sWTExtensions.fillGradientRectangle(tgc, _rectangle, 
+      JeeeyulsTabRenderer._jTabRendererHelper.getGradientColor(this.parent), JeeeyulsTabRenderer._jTabRendererHelper.getGradientPercents(this.parent), true);
+    tgc.dispose();
+    JeeeyulsTabRenderer._sWTExtensions.<Image>safeDispose(JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).getBackgroundImage());
+    ToolBar _chevron_1 = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent);
+    _chevron_1.setBackgroundImage(null);
+    ToolBar _chevron_2 = JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent);
+    _chevron_2.setBackgroundImage(toolbarImg);
+    JeeeyulsTabRenderer._sWTExtensions.<Image>safeDispose(JeeeyulsTabRenderer._jTabRendererHelper.getChevronItem(this.parent).getImage());
+    ToolItem _chevronItem = JeeeyulsTabRenderer._jTabRendererHelper.getChevronItem(this.parent);
+    _chevronItem.setImage(null);
+    ToolItem _chevronItem_1 = JeeeyulsTabRenderer._jTabRendererHelper.getChevronItem(this.parent);
+    _chevronItem_1.setImage(itemImage);
+    JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).setData("last-render-color", this.settings.getChevronColor());
+    JeeeyulsTabRenderer._jTabRendererHelper.getChevron(this.parent).setData("last-render-count", Integer.valueOf(count));
+  }
+  
+  private Rectangle getHeaderArea() {
+    Rectangle _xifexpression = null;
+    boolean _onTop = JeeeyulsTabRenderer._jTabRendererHelper.getOnTop(this.tabFolder);
+    if (_onTop) {
+      int _tabHeight = this.tabFolder.getTabHeight();
+      int _plus = (_tabHeight + 2);
+      _xifexpression = new Rectangle(this.settings.getMargins().x, 0, ((this.tabFolder.getSize().x - this.settings.getMargins().x) - this.settings.getMargins().width), _plus);
+    } else {
+      Rectangle _rectangle = new Rectangle(0, this.tabFolder.getSize().y, this.tabFolder.getSize().x, this.tabFolder.getSize().y);
+      final Procedure1<Rectangle> _function = new Procedure1<Rectangle>() {
+        @Override
+        public void apply(final Rectangle it) {
+          JeeeyulsTabRenderer._sWTExtensions.shrink(it, JeeeyulsTabRenderer.this.settings.getMargins().x, 0, JeeeyulsTabRenderer.this.settings.getMargins().width, 0);
+          it.height = JeeeyulsTabRenderer.this.tabFolder.getTabHeight();
+          int _tabHeight = JeeeyulsTabRenderer.this.tabFolder.getTabHeight();
+          int _minus = (-_tabHeight);
+          int _minus_1 = (_minus - JeeeyulsTabRenderer.this.settings.getMargins().height);
+          int _minus_2 = (_minus_1 - 2);
+          JeeeyulsTabRenderer._sWTExtensions.translate(it, 0, _minus_2);
+          JeeeyulsTabRenderer._sWTExtensions.resize(it, 0, 2);
+        }
+      };
+      _xifexpression = ObjectExtensions.<Rectangle>operator_doubleArrow(_rectangle, _function);
+    }
+    Rectangle headerArea = _xifexpression;
+    return headerArea;
+  }
+  
+  protected GC drawTabHeader(final int part, final int state, final Rectangle bounds, final GC gc) {
+    GC _xblockexpression = null;
+    {
+      boolean _onBottom = JeeeyulsTabRenderer._jTabRendererHelper.getOnBottom(this.parent);
+      if (_onBottom) {
+        throw new UnsupportedOperationException();
+      }
+      final Rectangle fillArea = this.getHeaderArea();
+      HSB[] _borderColors = this.settings.getBorderColors();
+      boolean _notEquals = (!Objects.equal(_borderColors, null));
+      if (_notEquals) {
+        JeeeyulsTabRenderer._sWTExtensions.shrink(fillArea, 1, 0);
+      }
+      Color[] _gradientColor = JeeeyulsTabRenderer._jTabRendererHelper.getGradientColor(this.tabFolder);
+      boolean _notEquals_1 = (!Objects.equal(_gradientColor, null));
+      if (_notEquals_1) {
+        JeeeyulsTabRenderer._sWTExtensions.fillGradientRoundRectangle(gc, fillArea, this.settings.getBorderRadius(), JeeeyulsTabRenderer._sWTExtensions.CORNER_TOP, JeeeyulsTabRenderer._jTabRendererHelper.getGradientColor(this.tabFolder), 
+          JeeeyulsTabRenderer._jTabRendererHelper.getGradientPercents(this.tabFolder), true);
+      } else {
+        gc.setBackground(this.tabFolder.getBackground());
+        JeeeyulsTabRenderer._sWTExtensions.fillRoundRectangle(gc, fillArea, this.settings.getBorderRadius(), JeeeyulsTabRenderer._sWTExtensions.CORNER_TOP);
+      }
+      final Rectangle outlineArea = JeeeyulsTabRenderer._sWTExtensions.getResized(this.getHeaderArea(), (-1), 0);
+      HSB[] _borderColors_1 = this.settings.getBorderColors();
+      boolean _notEquals_2 = (!Objects.equal(_borderColors_1, null));
+      if (_notEquals_2) {
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(IterableExtensions.<HSB>head(((Iterable<HSB>)Conversions.doWrapArray(this.settings.getBorderColors())))));
+        final net.jeeeyul.swtend.sam.Procedure1<Path> _function = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+          @Override
+          public void apply(final Path it) {
+            JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(outlineArea));
+            JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopLeft(outlineArea), 0, JeeeyulsTabRenderer.this.settings.getBorderRadius()));
+            int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+            int _multiply = (_borderRadius * 2);
+            JeeeyulsTabRenderer._sWTExtensions.addArc(it, JeeeyulsTabRenderer._sWTExtensions.relocateTopLeftWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(_multiply), outlineArea), 180, (-90));
+            Point _topRight = JeeeyulsTabRenderer._sWTExtensions.getTopRight(outlineArea);
+            int _borderRadius_1 = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+            int _minus = (-_borderRadius_1);
+            JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(_topRight, _minus, 0));
+            int _borderRadius_2 = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+            int _multiply_1 = (_borderRadius_2 * 2);
+            JeeeyulsTabRenderer._sWTExtensions.addArc(it, JeeeyulsTabRenderer._sWTExtensions.relocateTopRightWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(_multiply_1), outlineArea), 90, (-90));
+            JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomRight(outlineArea));
+          }
+        };
+        Path path = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function);
+        JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(this.settings.getBorderColors()), this.settings.getBorderPercents(), true);
+      }
+      GC _xifexpression = null;
+      int _tabSpacing = this.settings.getTabSpacing();
+      boolean _equals = (_tabSpacing == (-1));
+      if (_equals) {
+        GC _xblockexpression_1 = null;
+        {
+          CTabItem lastItem = JeeeyulsTabRenderer._jTabRendererHelper.getLastVisibleItem(this.parent);
+          GC _xifexpression_1 = null;
+          boolean _notEquals_3 = (!Objects.equal(lastItem, null));
+          if (_notEquals_3) {
+            GC _xblockexpression_2 = null;
+            {
+              final Rectangle itemBounds = lastItem.getBounds();
+              final net.jeeeyul.swtend.sam.Procedure1<Path> _function_1 = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+                @Override
+                public void apply(final Path it) {
+                  JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(itemBounds), 0, (-1)));
+                  JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopRight(itemBounds), 0, JeeeyulsTabRenderer.this.settings.getBorderRadius()));
+                  int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+                  int _multiply = (_borderRadius * 2);
+                  JeeeyulsTabRenderer._sWTExtensions.addArc(it, JeeeyulsTabRenderer._sWTExtensions.relocateTopRightWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(_multiply), JeeeyulsTabRenderer._sWTExtensions.getTopRight(itemBounds)), 0, 
+                    90);
+                }
+              };
+              Path path_1 = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function_1);
+              HSB[] _itemFillFor = JeeeyulsTabRenderer._jTabRendererHelper.getItemFillFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem));
+              boolean _notEquals_4 = (!Objects.equal(_itemFillFor, null));
+              if (_notEquals_4) {
+                JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path_1, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(JeeeyulsTabRenderer._jTabRendererHelper.getItemFillFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem))), 
+                  JeeeyulsTabRenderer._jTabRendererHelper.getItemFillPercentsFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem)), true);
+              }
+              GC _xifexpression_2 = null;
+              HSB[] _borderColorsFor = JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem));
+              boolean _notEquals_5 = (!Objects.equal(_borderColorsFor, null));
+              if (_notEquals_5) {
+                _xifexpression_2 = JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path_1, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem))), 
+                  JeeeyulsTabRenderer._jTabRendererHelper.getBorderPercentsFor(this.settings, JeeeyulsTabRenderer._jTabRendererHelper.getState(lastItem)), true);
+              }
+              _xblockexpression_2 = _xifexpression_2;
+            }
+            _xifexpression_1 = _xblockexpression_2;
+          }
+          _xblockexpression_1 = _xifexpression_1;
+        }
+        _xifexpression = _xblockexpression_1;
+      }
+      _xblockexpression = _xifexpression;
+    }
+    return _xblockexpression;
+  }
+  
+  protected GC drawTabBody(final int part, final int state, final Rectangle bounds, final GC gc) {
+    GC _xblockexpression = null;
+    {
+      boolean _onBottom = JeeeyulsTabRenderer._jTabRendererHelper.getOnBottom(this.parent);
+      if (_onBottom) {
+        throw new UnsupportedOperationException();
+      }
+      gc.setBackground(this.tabFolder.getParent().getBackground());
+      JeeeyulsTabRenderer._sWTExtensions.fill(gc, bounds);
+      HSB _shadowColor = this.settings.getShadowColor();
+      boolean _notEquals = (!Objects.equal(_shadowColor, null));
+      if (_notEquals) {
+        this.drawShadow(part, state, bounds, gc);
+      }
+      Color _xifexpression = null;
+      int _itemCount = this.parent.getItemCount();
+      boolean _greaterThan = (_itemCount > 0);
+      if (_greaterThan) {
+        Color[] _selectionGradientColor = JeeeyulsTabRenderer._jTabRendererHelper.getSelectionGradientColor(this.tabFolder);
+        Color _last = null;
+        if (((Iterable<Color>)Conversions.doWrapArray(_selectionGradientColor))!=null) {
+          _last=IterableExtensions.<Color>last(((Iterable<Color>)Conversions.doWrapArray(_selectionGradientColor)));
+        }
+        Color _selectionBackground = this.tabFolder.getSelectionBackground();
+        final Function1<Color, Boolean> _function = new Function1<Color, Boolean>() {
+          @Override
+          public Boolean apply(final Color it) {
+            return Boolean.valueOf((!Objects.equal(it, null)));
+          }
+        };
+        _xifexpression = IterableExtensions.<Color>findFirst(Collections.<Color>unmodifiableList(CollectionLiterals.<Color>newArrayList(_last, _selectionBackground)), _function);
+      } else {
+        Color[] _gradientColor = JeeeyulsTabRenderer._jTabRendererHelper.getGradientColor(this.tabFolder);
+        Color _last_1 = null;
+        if (((Iterable<Color>)Conversions.doWrapArray(_gradientColor))!=null) {
+          _last_1=IterableExtensions.<Color>last(((Iterable<Color>)Conversions.doWrapArray(_gradientColor)));
+        }
+        Color _background = this.tabFolder.getBackground();
+        final Function1<Color, Boolean> _function_1 = new Function1<Color, Boolean>() {
+          @Override
+          public Boolean apply(final Color it) {
+            return Boolean.valueOf((!Objects.equal(it, null)));
+          }
+        };
+        _xifexpression = IterableExtensions.<Color>findFirst(Collections.<Color>unmodifiableList(CollectionLiterals.<Color>newArrayList(_last_1, _background)), _function_1);
+      }
+      gc.setBackground(_xifexpression);
+      Rectangle fillArea = this.tabArea();
+      JeeeyulsTabRenderer._sWTExtensions.setTop(fillArea, JeeeyulsTabRenderer._sWTExtensions.getBottom(this.getHeaderArea()).y);
+      JeeeyulsTabRenderer._sWTExtensions.fillRoundRectangle(gc, fillArea, this.settings.getBorderRadius(), JeeeyulsTabRenderer._sWTExtensions.CORNER_BOTTOM);
+      JeeeyulsTabRenderer._sWTExtensions.shrink(fillArea, this.settings.getPaddings());
+      HSB[] _borderColors = this.settings.getBorderColors();
+      boolean _notEquals_1 = (!Objects.equal(_borderColors, null));
+      if (_notEquals_1) {
+        JeeeyulsTabRenderer._sWTExtensions.shrink(fillArea, 1, 0, 1, 1);
+      }
+      gc.setBackground(this.parent.getBackground());
+      JeeeyulsTabRenderer._sWTExtensions.fill(gc, fillArea);
+      GC _xifexpression_1 = null;
+      if ((((this.settings.getBorderWidth() > 0) && (!Objects.equal(this.settings.getBorderColors(), null))) && (!Objects.equal(this.settings.getBorderPercents(), null)))) {
+        GC _xblockexpression_1 = null;
+        {
+          final Rectangle offset = JeeeyulsTabRenderer._sWTExtensions.getResized(this.tabArea(), (-1), (-1));
+          gc.setLineWidth(this.settings.getBorderWidth());
+          final net.jeeeyul.swtend.sam.Procedure1<Path> _function_2 = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+            @Override
+            public void apply(final Path it) {
+              int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+              int _multiply = (_borderRadius * 2);
+              Rectangle corner = JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(_multiply);
+              JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(JeeeyulsTabRenderer.this.getHeaderArea()));
+              JeeeyulsTabRenderer._sWTExtensions.relocateBottomLeftWith(corner, offset);
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getLeft(corner));
+              JeeeyulsTabRenderer._sWTExtensions.addArc(it, corner, 180, 90);
+              JeeeyulsTabRenderer._sWTExtensions.relocateBottomRightWith(corner, offset);
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottom(corner));
+              JeeeyulsTabRenderer._sWTExtensions.addArc(it, corner, 270, 90);
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(JeeeyulsTabRenderer.this.getHeaderArea()), (-1), 0));
+            }
+          };
+          final Path bodyPath = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function_2);
+          gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(IterableExtensions.<HSB>last(((Iterable<HSB>)Conversions.doWrapArray(this.settings.getBorderColors())))));
+          JeeeyulsTabRenderer._sWTExtensions.draw(gc, bodyPath);
+          _xblockexpression_1 = JeeeyulsTabRenderer._sWTExtensions.draw(gc, bodyPath);
+        }
+        _xifexpression_1 = _xblockexpression_1;
+      }
+      _xblockexpression = _xifexpression_1;
+    }
+    return _xblockexpression;
+  }
+  
+  protected GC drawCloseButton(final int part, final int state, final Rectangle bounds, final GC gc) {
+    GC _xblockexpression = null;
+    {
+      final Rectangle box = JeeeyulsTabRenderer._sWTExtensions.shrink(JeeeyulsTabRenderer._sWTExtensions.relocateCenterWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(bounds.width), bounds), 2);
+      VerticalAlignment _closeButtonAlignment = this.settings.getCloseButtonAlignment();
+      boolean _equals = Objects.equal(_closeButtonAlignment, VerticalAlignment.BASE_LINE);
+      if (_equals) {
+        int _height = gc.getFontMetrics().getHeight();
+        int _minus = (bounds.height - _height);
+        int _divide = (_minus / 2);
+        int _leading = gc.getFontMetrics().getLeading();
+        int _plus = (_divide + _leading);
+        int _ascent = gc.getFontMetrics().getAscent();
+        int _plus_1 = (_plus + _ascent);
+        int _minus_1 = (_plus_1 - box.height);
+        box.y = _minus_1;
+        int _y = box.y;
+        int _switchResult = (int) 0;
+        int _closeButtonLineWidth = this.settings.getCloseButtonLineWidth();
+        switch (_closeButtonLineWidth) {
+          case 1:
+            _switchResult = 1;
+            break;
+          case 2:
+            _switchResult = 1;
+            break;
+          case 3:
+            _switchResult = 0;
+            break;
+          default:
+            _switchResult = 1;
+            break;
+        }
+        box.y = (_y + _switchResult);
+      }
+      boolean _isDebuggingGUI = Debug.isDebuggingGUI();
+      if (_isDebuggingGUI) {
+        gc.setBackground(JeeeyulsTabRenderer._sWTExtensions.COLOR_MAGENTA());
+        JeeeyulsTabRenderer._sWTExtensions.fill(gc, box);
+      }
+      final net.jeeeyul.swtend.sam.Procedure1<Path> _function = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+        @Override
+        public void apply(final Path it) {
+          JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getTopLeft(box));
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomRight(box));
+          JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getTopRight(box));
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(box));
+        }
+      };
+      Path path = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function);
+      HSB _switchResult_1 = null;
+      boolean _matched = false;
+      boolean _hasFlags = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.HOT);
+      if (_hasFlags) {
+        _matched=true;
+        HSB _closeButtonHotColor = this.settings.getCloseButtonHotColor();
+        HSB _closeButtonColor = this.settings.getCloseButtonColor();
+        _switchResult_1 = JeeeyulsTabRenderer._jTabRendererHelper.<HSB>getFirstNotNull(Collections.<HSB>unmodifiableList(CollectionLiterals.<HSB>newArrayList(_closeButtonHotColor, _closeButtonColor, HSB.BLACK)));
+      }
+      if (!_matched) {
+        boolean _hasFlags_1 = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED);
+        if (_hasFlags_1) {
+          _matched=true;
+          HSB _closeButtonActiveColor = this.settings.getCloseButtonActiveColor();
+          HSB _closeButtonColor_1 = this.settings.getCloseButtonColor();
+          _switchResult_1 = JeeeyulsTabRenderer._jTabRendererHelper.<HSB>getFirstNotNull(Collections.<HSB>unmodifiableList(CollectionLiterals.<HSB>newArrayList(_closeButtonActiveColor, _closeButtonColor_1, HSB.BLACK)));
+        }
+      }
+      if (!_matched) {
+        HSB _closeButtonColor_2 = this.settings.getCloseButtonColor();
+        _switchResult_1 = JeeeyulsTabRenderer._jTabRendererHelper.<HSB>getFirstNotNull(Collections.<HSB>unmodifiableList(CollectionLiterals.<HSB>newArrayList(_closeButtonColor_2, HSB.BLACK)));
+      }
+      HSB color = _switchResult_1;
+      gc.setLineWidth(Math.max(this.settings.getCloseButtonLineWidth(), 1));
+      gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(color));
+      _xblockexpression = JeeeyulsTabRenderer._sWTExtensions.draw(gc, path);
+    }
+    return _xblockexpression;
+  }
+  
+  protected int drawTabItem(final int part, final int state, final Rectangle bounds, final GC gc) {
+    int _xblockexpression = (int) 0;
+    {
+      final CTabItem item = this.tabFolder.getItem(part);
+      Rectangle _xifexpression = null;
+      boolean _onBottom = JeeeyulsTabRenderer._jTabRendererHelper.getOnBottom(this.tabFolder);
+      if (_onBottom) {
+        throw new UnsupportedOperationException();
+      } else {
+        Rectangle _bounds = item.getBounds();
+        int _max = Math.max(this.settings.getTabSpacing(), 0);
+        int _minus = (-_max);
+        _xifexpression = JeeeyulsTabRenderer._sWTExtensions.getResized(_bounds, _minus, 0);
+      }
+      final Rectangle itemBounds = _xifexpression;
+      int _tabSpacing = this.settings.getTabSpacing();
+      boolean _equals = (_tabSpacing == (-1));
+      if (_equals) {
+        JeeeyulsTabRenderer._sWTExtensions.resize(itemBounds, 1, 0);
+      }
+      this.drawTabItemBackground(part, state, itemBounds, gc);
+      Rectangle _xifexpression_1 = null;
+      Image _image = item.getImage();
+      boolean _notEquals = (!Objects.equal(_image, null));
+      if (_notEquals) {
+        _xifexpression_1 = JeeeyulsTabRenderer._sWTExtensions.translate(JeeeyulsTabRenderer._sWTExtensions.relocateLeftWith(item.getImage().getBounds(), item.getBounds()), this.settings.getTabItemPaddings().x, 0);
+      } else {
+        _xifexpression_1 = new Rectangle((itemBounds.x + this.settings.getTabItemPaddings().x), 0, 0, itemBounds.height);
+      }
+      Rectangle iconArea = _xifexpression_1;
+      Image _image_1 = item.getImage();
+      boolean _notEquals_1 = (!Objects.equal(_image_1, null));
+      if (_notEquals_1) {
+        final boolean isBusy = CSSClasses.getStyleClasses(item).contains("busy");
+        if (isBusy) {
+          JeeeyulsTabRenderer._sWTExtensions.drawImage(gc, item.getImage(), JeeeyulsTabRenderer._sWTExtensions.getTopLeft(iconArea));
+          final Image watingIcon = CoreImages.getImage(CoreImages.WAITING);
+          final Point iconSize = JeeeyulsTabRenderer._sWTExtensions.getSize(watingIcon.getBounds());
+          JeeeyulsTabRenderer._sWTExtensions.drawImage(gc, watingIcon, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(iconArea), JeeeyulsTabRenderer._sWTExtensions.getNegated(iconSize)), 1, 1));
+        } else {
+          JeeeyulsTabRenderer._sWTExtensions.drawImage(gc, item.getImage(), JeeeyulsTabRenderer._sWTExtensions.getTopLeft(iconArea));
+        }
+      }
+      Font _xifexpression_2 = null;
+      Font _font = item.getFont();
+      boolean _notEquals_2 = (!Objects.equal(_font, null));
+      if (_notEquals_2) {
+        _xifexpression_2 = item.getFont();
+      } else {
+        _xifexpression_2 = this.tabFolder.getFont();
+      }
+      gc.setFont(_xifexpression_2);
+      boolean closeVisible = false;
+      if (((JeeeyulsTabRenderer._jTabRendererHelper.getShowClose(this.tabFolder) || item.getShowClose()) && (JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item).width > 0))) {
+        if ((JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED) || JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.HOT))) {
+          final net.jeeeyul.swtend.sam.Procedure1<GC> _function = new net.jeeeyul.swtend.sam.Procedure1<GC>() {
+            @Override
+            public void apply(final GC it) {
+              JeeeyulsTabRenderer.this.draw(CTabFolderRenderer.PART_CLOSE_BUTTON, JeeeyulsTabRenderer._jTabRendererHelper.getCloseImageState(item), JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item), gc);
+            }
+          };
+          JeeeyulsTabRenderer._sWTExtensions.withClip(gc, JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item), _function);
+          closeVisible = true;
+        }
+      }
+      gc.setLineWidth(1);
+      final Point textSize = JeeeyulsTabRenderer._sWTExtensions.computeTextExtent(item.getText(), gc.getFont());
+      final Rectangle textArea = JeeeyulsTabRenderer._sWTExtensions.relocateLeftWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(textSize), JeeeyulsTabRenderer._sWTExtensions.getRight(iconArea));
+      Image _image_2 = item.getImage();
+      boolean _notEquals_3 = (!Objects.equal(_image_2, null));
+      if (_notEquals_3) {
+        JeeeyulsTabRenderer._sWTExtensions.translate(textArea, this.settings.getTabItemHorizontalSpacing(), 0);
+      }
+      if (((closeVisible && (!Objects.equal(JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item), null))) && (JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item).width > 0))) {
+        int _tabItemHorizontalSpacing = this.settings.getTabItemHorizontalSpacing();
+        int _minus_1 = (JeeeyulsTabRenderer._jTabRendererHelper.getCloseRect(item).x - _tabItemHorizontalSpacing);
+        JeeeyulsTabRenderer._sWTExtensions.setRight(textArea, _minus_1);
+      } else {
+        JeeeyulsTabRenderer._sWTExtensions.setRight(textArea, (JeeeyulsTabRenderer._sWTExtensions.getRight(itemBounds).x - this.settings.getTabItemPaddings().width));
+      }
+      boolean _isDebuggingGUI = Debug.isDebuggingGUI();
+      if (_isDebuggingGUI) {
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.COLOR_MAGENTA());
+        gc.setLineStyle(SWT.LINE_DASH);
+        gc.setLineDash(new int[] { 2, 2 });
+        gc.drawRectangle(textArea);
+        gc.setLineStyle(SWT.LINE_SOLID);
+        gc.setLineWidth(1);
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.COLOR_RED());
+        int _leading = gc.getFontMetrics().getLeading();
+        int _plus = (JeeeyulsTabRenderer._sWTExtensions.getTop(textArea).y + _leading);
+        int _ascent = gc.getFontMetrics().getAscent();
+        int _plus_1 = (_plus + _ascent);
+        int _leading_1 = gc.getFontMetrics().getLeading();
+        int _plus_2 = (JeeeyulsTabRenderer._sWTExtensions.getTop(textArea).y + _leading_1);
+        int _ascent_1 = gc.getFontMetrics().getAscent();
+        int _plus_3 = (_plus_2 + _ascent_1);
+        gc.drawLine(JeeeyulsTabRenderer._sWTExtensions.getLeft(textArea).x, _plus_1, JeeeyulsTabRenderer._sWTExtensions.getRight(textArea).x, _plus_3);
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.COLOR_BLUE());
+        int _leading_2 = gc.getFontMetrics().getLeading();
+        int _plus_4 = (JeeeyulsTabRenderer._sWTExtensions.getTop(textArea).y + _leading_2);
+        int _ascent_2 = gc.getFontMetrics().getAscent();
+        int _plus_5 = (_plus_4 + _ascent_2);
+        int _descent = gc.getFontMetrics().getDescent();
+        int _plus_6 = (_plus_5 + _descent);
+        int _leading_3 = gc.getFontMetrics().getLeading();
+        int _plus_7 = (JeeeyulsTabRenderer._sWTExtensions.getTop(textArea).y + _leading_3);
+        int _ascent_3 = gc.getFontMetrics().getAscent();
+        int _plus_8 = (_plus_7 + _ascent_3);
+        int _descent_1 = gc.getFontMetrics().getDescent();
+        int _plus_9 = (_plus_8 + _descent_1);
+        gc.drawLine(JeeeyulsTabRenderer._sWTExtensions.getLeft(textArea).x, _plus_6, 
+          JeeeyulsTabRenderer._sWTExtensions.getRight(textArea).x, _plus_9);
+      }
+      String _xifexpression_3 = null;
+      if ((textSize.x > textArea.width)) {
+        _xifexpression_3 = this.shortenText(gc, item.getText(), textArea.width);
+      } else {
+        _xifexpression_3 = item.getText();
+      }
+      String text = _xifexpression_3;
+      if ((this.parent.isFocusControl() && JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED))) {
+        gc.setAlpha(90);
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(JeeeyulsTabRenderer._jTabRendererHelper.getTextColorFor(this.settings, state)));
+        Point _topLeft = JeeeyulsTabRenderer._sWTExtensions.getTopLeft(textArea);
+        int _ascent_4 = gc.getFontMetrics().getAscent();
+        int _plus_10 = (_ascent_4 + 1);
+        Point lineFrom = JeeeyulsTabRenderer._sWTExtensions.getTranslated(_topLeft, 0, _plus_10);
+        Point lineTo = JeeeyulsTabRenderer._sWTExtensions.getTranslated(lineFrom, gc.textExtent(text.trim(), JeeeyulsTabRenderer.TEXT_FLAGS).x, 0);
+        JeeeyulsTabRenderer._sWTExtensions.draw(gc, lineFrom, lineTo);
+        gc.setAlpha(255);
+      }
+      final HSB textShadowColor = JeeeyulsTabRenderer._jTabRendererHelper.getTextShadowColorFor(this.settings, state);
+      final Point textShadowPosition = JeeeyulsTabRenderer._jTabRendererHelper.getTextShadowPositionFor(this.settings, state);
+      if ((((!Objects.equal(textShadowColor, null)) && (!Objects.equal(textShadowPosition, null))) && (!JeeeyulsTabRenderer._sWTExtensions.isEmpty(textShadowPosition)))) {
+        Point shadowPosition = JeeeyulsTabRenderer._jTabRendererHelper.getTextShadowPositionFor(this.settings, state);
+        gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(JeeeyulsTabRenderer._jTabRendererHelper.getTextShadowColorFor(this.settings, state)));
+        Point delta = JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopLeft(textArea), shadowPosition);
+        gc.drawText(text, delta.x, delta.y, JeeeyulsTabRenderer.TEXT_FLAGS);
+      }
+      gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(JeeeyulsTabRenderer._jTabRendererHelper.getTextColorFor(this.settings, state)));
+      gc.drawText(text, textArea.x, textArea.y, JeeeyulsTabRenderer.TEXT_FLAGS);
+      this.drawTabItemBorder(part, state, itemBounds, gc);
+      int _tabSpacing_1 = this.settings.getTabSpacing();
+      boolean _equals_1 = (_tabSpacing_1 == (-1));
+      if (_equals_1) {
+        CTabItem _xifexpression_4 = null;
+        if ((part > 0)) {
+          _xifexpression_4 = this.parent.getItem((part - 1));
+        } else {
+          _xifexpression_4 = null;
+        }
+        CTabItem prevItem = _xifexpression_4;
+        boolean hasToDrawLeftBorder = ((((!JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED)) && (!Objects.equal(prevItem, null))) && 
+          (!JeeeyulsTabRenderer._sWTExtensions.hasFlags(JeeeyulsTabRenderer._jTabRendererHelper.getState(prevItem), SWT.SELECTED))) && JeeeyulsTabRenderer._sWTExtensions.hasFlags(JeeeyulsTabRenderer._jTabRendererHelper.getState(prevItem), SWT.HOT));
+        if (hasToDrawLeftBorder) {
+          final net.jeeeyul.swtend.sam.Procedure1<Path> _function_1 = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+            @Override
+            public void apply(final Path it) {
+              JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(itemBounds));
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopLeft(itemBounds), 0, JeeeyulsTabRenderer.this.settings.getBorderRadius()));
+              int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+              int _multiply = (_borderRadius * 2);
+              JeeeyulsTabRenderer._sWTExtensions.addArc(it, JeeeyulsTabRenderer._sWTExtensions.relocateTopRightWith(JeeeyulsTabRenderer._sWTExtensions.newRectangleWithSize(_multiply), JeeeyulsTabRenderer._sWTExtensions.getTopLeft(itemBounds)), 0, 
+                90);
+            }
+          };
+          Path path = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function_1);
+          HSB[] _hoverBackgroundColors = this.settings.getHoverBackgroundColors();
+          boolean _notEquals_4 = (!Objects.equal(_hoverBackgroundColors, null));
+          if (_notEquals_4) {
+            JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(this.settings.getHoverBackgroundColors()), 
+              this.settings.getHoverBackgroundPercents(), true);
+          }
+          HSB[] _hoverBorderColors = this.settings.getHoverBorderColors();
+          boolean _notEquals_5 = (!Objects.equal(_hoverBorderColors, null));
+          if (_notEquals_5) {
+            JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, SWT.HOT)), 
+              JeeeyulsTabRenderer._jTabRendererHelper.getBorderPercentsFor(this.settings, SWT.HOT), true);
+          }
+        }
+        boolean hasToFix = ((!JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED)) && (JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.HOT) || JeeeyulsTabRenderer._sWTExtensions.hasFlags(JeeeyulsTabRenderer._jTabRendererHelper.lastKnownState(item), SWT.HOT)));
+        if (hasToFix) {
+          this.parent.redraw(((itemBounds.x + itemBounds.width) - 1), itemBounds.y, 1, itemBounds.height, false);
+          this.parent.update();
+        }
+      }
+      HSB[] _borderColors = this.settings.getBorderColors();
+      boolean _notEquals_6 = (!Objects.equal(_borderColors, null));
+      if (_notEquals_6) {
+        CTabItem _firstVisibleItem = JeeeyulsTabRenderer._jTabRendererHelper.getFirstVisibleItem(this.parent);
+        boolean _equals_2 = Objects.equal(_firstVisibleItem, item);
+        if (_equals_2) {
+          final net.jeeeyul.swtend.sam.Procedure1<Path> _function_2 = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+            @Override
+            public void apply(final Path it) {
+              Point _topRight = JeeeyulsTabRenderer._sWTExtensions.getTopRight(itemBounds);
+              int _max = Math.max(JeeeyulsTabRenderer.this.settings.getTabSpacing(), 0);
+              int _plus = (_max + 1);
+              JeeeyulsTabRenderer._sWTExtensions.moveTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(_topRight, _plus, 0));
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopLeft(itemBounds), JeeeyulsTabRenderer.this.settings.getBorderRadius(), 0));
+              int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+              int _multiply = (_borderRadius * 2);
+              int _borderRadius_1 = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+              int _multiply_1 = (_borderRadius_1 * 2);
+              JeeeyulsTabRenderer._sWTExtensions.addArc(it, 
+                JeeeyulsTabRenderer._sWTExtensions.newRectangle(itemBounds.x, itemBounds.y, _multiply, _multiply_1), 
+                90, 90);
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(itemBounds), 0, 1));
+            }
+          };
+          Path path_1 = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function_2);
+          JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, path_1, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(this.settings.getBorderColors()), this.settings.getBorderPercents(), true);
+        } else {
+          gc.setForeground(JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColor(IterableExtensions.<HSB>head(((Iterable<HSB>)Conversions.doWrapArray(this.settings.getBorderColors())))));
+          Point _topRight = JeeeyulsTabRenderer._sWTExtensions.getTopRight(itemBounds);
+          int _max_1 = Math.max(this.settings.getTabSpacing(), 0);
+          int _plus_11 = (_max_1 + 1);
+          JeeeyulsTabRenderer._sWTExtensions.drawLine(gc, JeeeyulsTabRenderer._sWTExtensions.getTranslated(JeeeyulsTabRenderer._sWTExtensions.getTopLeft(itemBounds), (-1), 0), 
+            JeeeyulsTabRenderer._sWTExtensions.getTranslated(_topRight, _plus_11, 0));
+        }
+      }
+      _xblockexpression = JeeeyulsTabRenderer._jTabRendererHelper.setLastKnownState(item, state);
+    }
+    return _xblockexpression;
+  }
+  
+  protected void drawTabItemBorder(final int part, final int state, final Rectangle bounds, final GC gc) {
+    if ((Objects.equal(JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, state), null) || Objects.equal(JeeeyulsTabRenderer._jTabRendererHelper.getBorderPercentsFor(this.settings, state), null))) {
+      return;
+    }
+    final Rectangle itemOutlineBounds = JeeeyulsTabRenderer._sWTExtensions.getResized(bounds, (-1), 0);
+    final CTabItem item = this.tabFolder.getItem(part);
+    int _borderWidth = this.settings.getBorderWidth();
+    int _divide = (_borderWidth / 2);
+    final Rectangle outlineOffset = JeeeyulsTabRenderer._sWTExtensions.shrink(itemOutlineBounds, _divide);
+    Path outline = null;
+    boolean _onBottom = JeeeyulsTabRenderer._jTabRendererHelper.getOnBottom(this.tabFolder);
+    if (_onBottom) {
+      throw new UnsupportedOperationException();
+    }
+    final net.jeeeyul.swtend.sam.Procedure1<Path> _function = new net.jeeeyul.swtend.sam.Procedure1<Path>() {
+      @Override
+      public void apply(final Path it) {
+        int keyLineY = (JeeeyulsTabRenderer._sWTExtensions.getBottom(item.getBounds()).y - 1);
+        int _borderRadius = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+        boolean _greaterThan = (_borderRadius > 0);
+        if (_greaterThan) {
+          Point _topLeft = JeeeyulsTabRenderer._sWTExtensions.getTopLeft(outlineOffset);
+          int _borderRadius_1 = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+          int _multiply = (_borderRadius_1 * 2);
+          int _borderRadius_2 = JeeeyulsTabRenderer.this.settings.getBorderRadius();
+          int _multiply_1 = (_borderRadius_2 * 2);
+          Point _point = new Point(_multiply, _multiply_1);
+          Rectangle corner = JeeeyulsTabRenderer._sWTExtensions.newRectangle(_topLeft, _point);
+          JeeeyulsTabRenderer._sWTExtensions.relocateTopRightWith(corner, outlineOffset);
+          boolean _hasFlags = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED);
+          if (_hasFlags) {
+            it.moveTo(((JeeeyulsTabRenderer.this.tabFolder.getSize().x - JeeeyulsTabRenderer.this.settings.getMargins().width) - 1), keyLineY);
+            it.lineTo(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(itemOutlineBounds).x, keyLineY);
+          } else {
+            it.moveTo(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(outlineOffset).x, keyLineY);
+          }
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getRight(corner));
+          JeeeyulsTabRenderer._sWTExtensions.addArc(it, corner, 0, 90);
+          JeeeyulsTabRenderer._sWTExtensions.relocateTopLeftWith(corner, outlineOffset);
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTop(corner));
+          if ((Objects.equal(JeeeyulsTabRenderer.this.settings.getBorderColors(), null) || ((!Objects.equal(JeeeyulsTabRenderer.this.settings.getBorderColors(), null)) && (!Objects.equal(item, JeeeyulsTabRenderer._jTabRendererHelper.getFirstVisibleItem(JeeeyulsTabRenderer.this.parent)))))) {
+            JeeeyulsTabRenderer._sWTExtensions.addArc(it, corner, 90, 90);
+            it.lineTo(outlineOffset.x, keyLineY);
+            boolean _hasFlags_1 = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED);
+            if (_hasFlags_1) {
+              Point left = new Point(JeeeyulsTabRenderer.this.settings.getMargins().x, keyLineY);
+              HSB[] _borderColors = JeeeyulsTabRenderer.this.settings.getBorderColors();
+              boolean _notEquals = (!Objects.equal(_borderColors, null));
+              if (_notEquals) {
+                JeeeyulsTabRenderer._sWTExtensions.translate(left, 1, 0);
+              }
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, left);
+            }
+          }
+        } else {
+          boolean _hasFlags_2 = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED);
+          if (_hasFlags_2) {
+            int _borderWidth = JeeeyulsTabRenderer.this.settings.getBorderWidth();
+            int _minus = ((JeeeyulsTabRenderer.this.tabFolder.getSize().x - JeeeyulsTabRenderer.this.settings.getMargins().width) - _borderWidth);
+            it.moveTo(_minus, keyLineY);
+            it.lineTo(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(itemOutlineBounds).x, keyLineY);
+          } else {
+            it.moveTo(JeeeyulsTabRenderer._sWTExtensions.getBottomRight(outlineOffset).x, keyLineY);
+          }
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTopRight(itemOutlineBounds));
+          JeeeyulsTabRenderer._sWTExtensions.lineTo(it, JeeeyulsTabRenderer._sWTExtensions.getTopLeft(itemOutlineBounds));
+          if ((Objects.equal(JeeeyulsTabRenderer.this.settings.getBorderColors(), null) || ((!Objects.equal(JeeeyulsTabRenderer.this.settings.getBorderColors(), null)) && (!Objects.equal(item, JeeeyulsTabRenderer._jTabRendererHelper.getFirstVisibleItem(JeeeyulsTabRenderer.this.parent)))))) {
+            it.lineTo(JeeeyulsTabRenderer._sWTExtensions.getBottomLeft(itemOutlineBounds).x, keyLineY);
+            boolean _hasFlags_3 = JeeeyulsTabRenderer._sWTExtensions.hasFlags(state, SWT.SELECTED);
+            if (_hasFlags_3) {
+              Point left_1 = new Point(JeeeyulsTabRenderer.this.settings.getMargins().x, keyLineY);
+              HSB[] _borderColors_1 = JeeeyulsTabRenderer.this.settings.getBorderColors();
+              boolean _notEquals_1 = (!Objects.equal(_borderColors_1, null));
+              if (_notEquals_1) {
+                JeeeyulsTabRenderer._sWTExtensions.translate(left_1, JeeeyulsTabRenderer.this.settings.getBorderWidth(), 0);
+              }
+              JeeeyulsTabRenderer._sWTExtensions.lineTo(it, left_1);
+            }
+          }
+        }
+      }
+    };
+    outline = JeeeyulsTabRenderer._sWTExtensions.newTemporaryPath(_function);
+    gc.setLineWidth(this.settings.getBorderWidth());
+    JeeeyulsTabRenderer._sWTExtensions.drawGradientPath(gc, outline, JeeeyulsTabRenderer._sWTExtensions.toAutoDisposeColors(JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, state)), 
+      JeeeyulsTabRenderer._jTabRendererHelper.getBorderPercentsFor(this.settings, state), true);
+  }
+  
+  protected GC drawTabItemBackground(final int part, final int state, final Rectangle bounds, final GC gc) {
+    GC _xblockexpression = null;
+    {
+      final Rectangle itemBounds = JeeeyulsTabRenderer._sWTExtensions.getCopy(bounds);
+      HSB[] _borderColorsFor = JeeeyulsTabRenderer._jTabRendererHelper.getBorderColorsFor(this.settings, state);
+      boolean _notEquals = (!Objects.equal(_borderColorsFor, null));
+      if (_notEquals) {
+        JeeeyulsTabRenderer._sWTExtensions.shrink(itemBounds, 1, 0);
+      }
+      HSB[] colors = JeeeyulsTabRenderer._jTabRendererHelper.getItemFillFor(this.settings, state);
+      GC _xifexpression = null;
+      boolean _notEquals_1 = (!Objects.equal(colors, null));
+      if (_notEquals_1) {
+        _xifexpression = JeeeyulsTabRenderer._sWTExtensions.fillGradientRoundRectangle(gc, itemBounds, this.settings.getBorderRadius(), JeeeyulsTabRenderer._sWTExtensions.CORNER_TOP, colors, 
+          JeeeyulsTabRenderer._jTabRendererHelper.getItemFillPercentsFor(this.settings, state), true);
+      }
+      _xblockexpression = _xifexpression;
+    }
+    return _xblockexpression;
+  }
+  
+  protected GC drawShadow(final int part, final int state, final Rectangle bounds, final GC gc) {
+    final net.jeeeyul.swtend.sam.Procedure1<GC> _function = new net.jeeeyul.swtend.sam.Procedure1<GC>() {
+      @Override
+      public void apply(final GC it) {
+        JeeeyulsTabRenderer.this.getShadow().fill(gc, JeeeyulsTabRenderer._sWTExtensions.translate(JeeeyulsTabRenderer._sWTExtensions.getExpanded(JeeeyulsTabRenderer.this.tabArea(), JeeeyulsTabRenderer.this.settings.getShadowRadius()), JeeeyulsTabRenderer.this.settings.getShadowPosition()));
+      }
+    };
+    return JeeeyulsTabRenderer._sWTExtensions.withClip(gc, bounds, _function);
+  }
+  
+  protected Rectangle tabArea() {
+    return JeeeyulsTabRenderer._sWTExtensions.shrink(JeeeyulsTabRenderer._sWTExtensions.setSize(JeeeyulsTabRenderer._sWTExtensions.newRectangle(), this.tabFolder.getSize()), this.settings.getMargins().x, 0, this.settings.getMargins().width, 
+      this.settings.getMargins().height);
+  }
+  
+  protected NinePatch getShadow() {
+    if ((Objects.equal(this.shadowNinePatch, null) || this.shadowNinePatch.isDisposed())) {
+      RGB _rGB = this.settings.getShadowColor().toRGB();
+      int _borderRadius = this.settings.getBorderRadius();
+      int _plus = (_borderRadius + 3);
+      this.shadowNinePatch = Shadow9PatchFactory.createShadowPatch(_rGB, _plus, this.settings.getShadowRadius());
+    }
+    return this.shadowNinePatch;
+  }
+  
+  public JTabSettings getSettings() {
+    return this.settings;
+  }
+  
+  public CTabFolder getTabFolder() {
+    return this.tabFolder;
+  }
+  
+  private String shortenText(final GC gc, final String text, final int width) {
+    String _xblockexpression = null;
+    {
+      String _xifexpression = null;
+      boolean _isUseEllipses = this.settings.isUseEllipses();
+      if (_isUseEllipses) {
+        _xifexpression = "...";
+      } else {
+        _xifexpression = "";
+      }
+      String ellipses = _xifexpression;
+      _xblockexpression = JeeeyulsTabRenderer._sWTExtensions.shortenText(gc, text, width, ellipses, JeeeyulsTabRenderer.TEXT_FLAGS);
+    }
+    return _xblockexpression;
+  }
+}

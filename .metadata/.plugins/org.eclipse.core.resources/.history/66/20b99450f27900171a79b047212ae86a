@@ -1,0 +1,15 @@
+source.. = src/
+output.. = bin/
+bin.includes = .,\
+               plugin.xml,\
+               plugin.properties,\
+               icons/,\
+               wbp-meta/,\
+               templates/,\
+               META-INF/,\
+               resources/,\
+               about.ini,\
+               about.mappings,\
+               about.properties,\
+               about.html
+jars.compile.order = .

@@ -1,0 +1,15 @@
+2017-08-05 16:20:23,633 [Worker-3] INFO  c.g.t.t.d.PublishedGradleVersions - Gradle version information cache is not available. Remote download required.
+2017-08-05 17:59:42,653 [Worker-3] INFO  c.g.t.t.d.PublishedGradleVersions - Gradle version information cache is up-to-date. Trying to read.
+2017-08-05 18:15:21,924 [Start Help Server] INFO  org.eclipse.jetty.util.log - Logging initialized @962083ms to org.eclipse.jetty.util.log.Slf4jLog
+2017-08-05 18:15:22,147 [Start Help Server] INFO  org.eclipse.jetty.server.Server - jetty-9.4.5.v20170502
+2017-08-05 18:15:22,198 [Start Help Server] INFO  org.eclipse.jetty.server.session - DefaultSessionIdManager workerName=node0
+2017-08-05 18:15:22,198 [Start Help Server] INFO  org.eclipse.jetty.server.session - No SessionScavenger set, using defaults
+2017-08-05 18:15:22,201 [Start Help Server] INFO  org.eclipse.jetty.server.session - Scavenging every 600000ms
+2017-08-05 18:15:22,246 [Start Help Server] INFO  o.e.j.server.handler.ContextHandler - Started o.e.j.s.ServletContextHandler@4e793dd0{/help,null,AVAILABLE}
+2017-08-05 18:15:22,257 [Start Help Server] INFO  o.e.jetty.server.AbstractConnector - Started ServerConnector@1ecd2854{HTTP/1.1,[http/1.1]}{127.0.0.1:37571}
+2017-08-05 18:15:22,258 [Start Help Server] INFO  org.eclipse.jetty.server.Server - Started @962418ms
+2017-08-05 19:18:59,897 [Stop Help Server] INFO  o.e.jetty.server.AbstractConnector - Stopped ServerConnector@1ecd2854{HTTP/1.1,[http/1.1]}{127.0.0.1:0}
+2017-08-05 19:18:59,907 [Stop Help Server] INFO  org.eclipse.jetty.server.session - Stopped scavenging
+2017-08-05 19:18:59,960 [Stop Help Server] INFO  o.e.j.server.handler.ContextHandler - Stopped o.e.j.s.ServletContextHandler@4e793dd0{/help,null,UNAVAILABLE}
+2017-08-05 19:23:16,464 [Worker-4] INFO  c.g.t.t.d.PublishedGradleVersions - Gradle version information cache is up-to-date. Trying to read.
+2017-08-05 20:04:32,766 [Worker-1] INFO  c.g.t.t.d.PublishedGradleVersions - Gradle version information cache is up-to-date. Trying to read.
